@@ -11,10 +11,11 @@ local Target = RL.Target;
 
 if RLib_AssistedCombat_SavedVar == nil then
     RLib_AssistedCombat_SavedVar = {}
-    RLib_AssistedCombat_SavedVar.SpellDict = {}
 end
 
-
+if RLib_AssistedCombat_SavedVar.SpellDict == nil then
+    RLib_AssistedCombat_SavedVar.SpellDict = {}
+end
 
 RL.Rotation[addonName] = Rotation
 Rotation.Macros = {}
@@ -33,6 +34,13 @@ end
 function Rotation:InitMacro()
     local macro = Rotation.Macros;
     local SpellDict = RLib_AssistedCombat_SavedVar.SpellDict
+
+    -- 确保SpellDict不为nil
+    if SpellDict == nil then
+        SpellDict = {}
+        RLib_AssistedCombat_SavedVar.SpellDict = SpellDict
+    end
+
     do
         local spellIDs = C_AssistedCombat.GetRotationSpells()
         for i = 1, #spellIDs do
@@ -119,15 +127,23 @@ function Rotation:Main()
         return Action:Idle(idleState)
     end
 
+    if spellID == 0 then
+        return Action:Cast("AssistedCombat")
+    end
     if SpellDict[spellID] then
         local spellName = SpellDict[spellID]
         return Action:Cast(spellName)
     else
         local spellName = C_Spell.GetSpellName(spellID)
-        Utils.Print("SpellID:" .. spellID .. "spellName" .. spellName .. "，未出现在初始化宏中，请使用/reload修复")
-        if (spellName ~= nil) and (spellID ~= nil) then
-            RLib_AssistedCombat_SavedVar.SpellDict[spellID] = spellName -- 修复拼写错误 SpellDictt -> SpellDict
+        if spellName == nil then
+            Utils.Print("SpellID:" .. spellID .. " 无法获取法术名称，请使用/reload修复")
+            return Action:Cast("AssistedCombat")
+        else
+            Utils.Print("SpellID:" .. spellID .. "spellName" .. spellName .. "，未出现在初始化宏中，请使用/reload修复")
+            if (spellName ~= nil) and (spellID ~= nil) then
+                RLib_AssistedCombat_SavedVar.SpellDict[spellID] = spellName -- 修复拼写错误 SpellDictt -> SpellDict
+            end
+            return Action:Cast(spellName)
         end
-        return Action:Cast("AssistedCombat")
     end
 end
